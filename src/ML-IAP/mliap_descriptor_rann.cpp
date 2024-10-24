@@ -11,6 +11,8 @@
 #include "neigh_list.h"
 #include "pair_mliap.h"
 #include "tokenizer.h"
+#include "rann_fingerprint.h"
+#include "pair_rann.h"
 
 #include <cmath>
 #include <cstring>
@@ -43,7 +45,7 @@ return out;
 }
 
 
-void compute_descriptors (class MLIAPData *data){
+void MLIAPDescriptorRANN::compute_descriptors (class MLIAPData *data){
     int n = data->nlistatoms;
     int* numneighs  = data->numneighs; // Number of neighbors for an atom
     int* iatoms = data->iatoms; //Index of atom
@@ -128,8 +130,48 @@ if(ptr == strchr(line, '#')) *ptr = '\0';
  Tokenizer words(line, "' \t\n\r\f");
  std::string keyword = words.next();
 
+if (comm->me != 0){
+    utils::logmesg(lmp, "RANN keyword {}{} \n", keyword);
 }
+
+if (keyword == "atomtypes"){
+    for (int iatom = 0; iatom < nelements; iatom++){ //NEED TO CHECK THIS
+        elements[iatom] = utils::strdup(words.next());
+        atomtypes_flag = 1;
+    }
 }
+if(keyword == "mass"){
+    for (int iatom = 0; iatom < nelements ; iatom++){
+        wjelem[iatom] = utils::numeric(FLERR,words.next(), false, lmp); // NEED TO CHECK IF wj_elem IS THE VECTOR OF MASS
+        mass_flag = 1 ;
+    }
+}
+//HOLD FINGERPRINTS PER ELEMENT
+if (keyword == "fingerprintsperelement"){
+    for (int i = 0; i<nelements; i++){
+        fingerprintsperelement[i] = utils::inumeric(FLERR, words.next(), false, lmp);
+       }
+    words.next();
+    for(int i=0; i<nelements; i++){
+        for (int j=0; j<fingerprintsperelement[i]; j++){
+            fingerprints[i][j] = utils::strdup(words.next()); 
+           keyword = words.next();
+           if(keyword != "fingerprints"){
+            break;
+           }
+        }
+    } 
+    }
+
+if(keyword == "fingerprintconstants"){
+        
+}
+
+}
+
+
+}
+
 
 
 #endif

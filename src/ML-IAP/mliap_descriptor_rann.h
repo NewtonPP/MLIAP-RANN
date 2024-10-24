@@ -24,12 +24,19 @@ public:
   char *ctilde_file;
 
  protected:
-  int re;
-  int rc;
-  int * alpha;
-  int dr;
-  int o;
-  int n;
+  double re;
+  double rc;
+  double * alpha;
+  double dr;
+  signed int o;
+  signed int n;
+  int *fingerprintsperelement;
+  std::string ** fingerprints;
+  int *nfingerprintconstants;
+  
+
+
+  
 
 };
 
