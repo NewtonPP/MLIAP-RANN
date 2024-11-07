@@ -46,31 +46,35 @@ return out;
 
 
 void MLIAPDescriptorRANN::compute_descriptors (class MLIAPData *data){
-    int n = data->nlistatoms;
+    int nlistatoms = data->nlistatoms;
     int* numneighs  = data->numneighs; // Number of neighbors for an atom
     int* iatoms = data->iatoms; //Index of atom
-    int* jatoms = data->jatoms; //Index of each neighbor
-    int* jelems = data->jelems; //Elements of each neighbor;
+    int* ielems = data->ielems; // This is an array that stores element of each atom
+
+    int* jatoms = data->jatoms; //This array stores Index of each neighbor
+    int* jelems = data->jelems; //This array stores Elements of each neighbor;
+
     int re;
-    double Fn;
-    double descriptor;
-    double euler = 2.71828;
-    double alpha;   
+    euler = 2.71828;
+    double alpha; 
     double rc, dr;
     double sij;
 
-    for (int ii = 0; ii<n ; ii++){
-        int atomi = iatoms[ii]; //Global atom index for the atom is now stored in atomi
-        int neighbori = numneighs[ii]; //Neighbor of atomi
-        int *jelems = data->lmp_firstneigh[ii]; // This contains the neighbors for atomi
+    for (int ii = 0; ii<nlistatoms ; ii++){
+        // int atomi = iatoms[ii]; //Global atom index for the atom is now stored in atomi
+        // int neighbori = numneighs[atomi]; //Number of neighbors for atomi
+        // int *jelems = data->lmp_firstneigh[atomi]; // This contains the neighbors for atomi
+    int ielem = ielems[ii];
+    int neighi = numneighs[ii];
 
-    for (int jj =0; jj<neighbori;jj++){
-        int jindex = jelems[jj];
-        double rij = data->rij[ii][jj];
+    for (int jj =0; jj<neighi;jj++){
+        int jelem = jelems[jj];
 
-         if (ii != jj){
-             descriptor += pow((rij/re),n) * pow(euler,alpha * (rij/re)) * compute_cutoff(rij,rc, dr) * sij; 
-         }
+        double rij = data->rij[ii][jj]; //This stores the distance between the atom and its neighboring atom
+
+        
+        data->descriptors[ii][jj] = pow((rij/re),n) * pow(euler,alpha * (rij/re)) * compute_cutoff(rij,rc, dr) * sij; 
+     
     }
     }
 }
@@ -98,7 +102,7 @@ FILE *fpparam;
 if (comm->me == 0 ){
     fpparam = utils::open_potential(paramfilename,lmp,nullptr);
     if(fpparam == nullptr){
-        error->one(FLERR, "Cannot open SO3 parameter file {}: {}", paramfilename, utils::getsyserror);
+        error->one(FLERR, "Cannot open RANN parameter file {}: {}", paramfilename, utils::getsyserror);
     }
 }
 
@@ -118,10 +122,12 @@ while(true){
     n = strlen(line)+1;
     }
 
-MPI_Bcast(&eof,1,MPI_INT,0, world);
+MPI_Bcast(line, n, MPI_CHAR, 0, world);
 if (eof) break;
-MPI_Bcast(&n,1,MPI_INT,0,world);
-MPI_Bcast(line,1,MPI_CHAR,0,world);
+MPI_Bcast(line, n, MPI_CHAR, 0, world);
+
+MPI_Bcast(line, n, MPI_CHAR, 0, world);
+
 
 if(ptr == strchr(line, '#')) *ptr = '\0';
  nwords = utils::count_words(line);
@@ -164,11 +170,32 @@ if (keyword == "fingerprintsperelement"){
     }
 
 if(keyword == "fingerprintconstants"){
-        
+        for (int i = 0; i<nelements; i++){
+            bool loop = true;
+            int j =0;
+            while(loop){
+                fingerprintconstants[i][j] = utils::numeric(FLERR, words.next(), false, lmp);
+                keyword = words.next();
+                if(keyword != "fingerprintconstants"){
+                    break;
+                }
+                else{
+                    j++;
+                }
+            }
+        }
 }
+
+//Compute Fingerprints
+
+//TO BE CONTINUED
+}
+
 
 }
 
+
+void MLIAPDescriptorRANN::compute_forces(class MLIAPData *data){
 
 }
 

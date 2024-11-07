@@ -28,11 +28,12 @@ public:
   double rc;
   double * alpha;
   double dr;
+  double euler;
   signed int o;
   signed int n;
   int *fingerprintsperelement;
   std::string ** fingerprints;
-  int *nfingerprintconstants;
+  int **fingerprintconstants;
   
 
 
